@@ -249,41 +249,56 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 				kind = fieldType.Type.Kind()
 			}
 
-			marshaler, isMarshaler := v.Interface().(json.Marshaler)
-			if isMarshaler {
-				marshalResult, marshalError := marshaler.MarshalJSON()
-				if marshalError != nil {
-					er = ErrBadJSONAPIID
+			// Handle allowed types
+			switch kind {
+			case reflect.String:
+				node.ID = v.Interface().(string)
+			case reflect.Int:
+				node.ID = strconv.FormatInt(int64(v.Interface().(int)), 10)
+			case reflect.Int8:
+				node.ID = strconv.FormatInt(int64(v.Interface().(int8)), 10)
+			case reflect.Int16:
+				node.ID = strconv.FormatInt(int64(v.Interface().(int16)), 10)
+			case reflect.Int32:
+				node.ID = strconv.FormatInt(int64(v.Interface().(int32)), 10)
+			case reflect.Int64:
+				node.ID = strconv.FormatInt(v.Interface().(int64), 10)
+			case reflect.Uint:
+				node.ID = strconv.FormatUint(uint64(v.Interface().(uint)), 10)
+			case reflect.Uint8:
+				node.ID = strconv.FormatUint(uint64(v.Interface().(uint8)), 10)
+			case reflect.Uint16:
+				node.ID = strconv.FormatUint(uint64(v.Interface().(uint16)), 10)
+			case reflect.Uint32:
+				node.ID = strconv.FormatUint(uint64(v.Interface().(uint32)), 10)
+			case reflect.Uint64:
+				node.ID = strconv.FormatUint(v.Interface().(uint64), 10)
+			default:
+				// Check if ID type implements json.Marshaler
+				marshaler, isMarshaler := v.Interface().(json.Marshaler)
+
+				if !isMarshaler {
+					// Check if ID type is a pointer type that implements json.Marshaler
+					marshaler, isMarshaler = fieldValue.Interface().(json.Marshaler)
 				}
-				node.ID = string(marshalResult[1 : len(marshalResult)-1])
-			} else {
-				// Handle allowed types
-				switch kind {
-				case reflect.String:
-					node.ID = v.Interface().(string)
-				case reflect.Int:
-					node.ID = strconv.FormatInt(int64(v.Interface().(int)), 10)
-				case reflect.Int8:
-					node.ID = strconv.FormatInt(int64(v.Interface().(int8)), 10)
-				case reflect.Int16:
-					node.ID = strconv.FormatInt(int64(v.Interface().(int16)), 10)
-				case reflect.Int32:
-					node.ID = strconv.FormatInt(int64(v.Interface().(int32)), 10)
-				case reflect.Int64:
-					node.ID = strconv.FormatInt(v.Interface().(int64), 10)
-				case reflect.Uint:
-					node.ID = strconv.FormatUint(uint64(v.Interface().(uint)), 10)
-				case reflect.Uint8:
-					node.ID = strconv.FormatUint(uint64(v.Interface().(uint8)), 10)
-				case reflect.Uint16:
-					node.ID = strconv.FormatUint(uint64(v.Interface().(uint16)), 10)
-				case reflect.Uint32:
-					node.ID = strconv.FormatUint(uint64(v.Interface().(uint32)), 10)
-				case reflect.Uint64:
-					node.ID = strconv.FormatUint(v.Interface().(uint64), 10)
-				default:
-					// We had a JSON float (numeric), but our field was not one of the
-					// allowed numeric types
+
+				if isMarshaler {
+					marshalResult, marshalError := marshaler.MarshalJSON()
+					if marshalError != nil {
+						er = ErrBadJSONAPIID
+					}
+
+					id := string(marshalResult[:])
+					// Prevent quoting of id
+					if len(id) >= 2 {
+						if id[0] == '"' && id[len(id)-1] == '"' {
+							id = id[1 : len(id)-1]
+						}
+					}
+
+					node.ID = id
+				} else {
+					// Our field was not one of the ID allowed types
 					er = ErrBadJSONAPIID
 					break
 				}

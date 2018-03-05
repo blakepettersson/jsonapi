@@ -215,12 +215,91 @@ func TestMarshalIDPtr(t *testing.T) {
 	// attributes := data["attributes"].(map[string]interface{})
 
 	// Verify that the ID was sent
-	val, exists := data["id"]
+	val, exists := data["id"].(string)
 	if !exists {
 		t.Fatal("Was expecting the data.id member to exist")
 	}
 	if val != id {
 		t.Fatalf("Was expecting the data.id member to be `%s`, got `%s`", id, val)
+	}
+}
+
+func TestMarshalIDMarshallerPtr(t *testing.T) {
+	id := AuthorID{
+		Value: "123e4567-e89b-12d3-a456-426655440000",
+	}
+	make, model := "Ford", "Mustang"
+	car := &CarAuthorID{
+		ID:    &id,
+		Make:  &make,
+		Model: &model,
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, car); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+	data := jsonData["data"].(map[string]interface{})
+
+	// Verify that the ID was sent
+	val, exists := data["id"]
+	if !exists {
+		t.Fatal("Was expecting the data.id member to exist")
+	}
+
+	if val != id.Value {
+		t.Fatalf("Was expecting the data.id member to be `%s`, got `%s`", id, val)
+	}
+}
+
+func TestMarshallerPtrArray(t *testing.T) {
+	id1 := "111111"
+	id2 := "222222"
+
+	authors := []*AuthorID{
+		{
+			Value: id1,
+		},
+		{
+			Value: id2,
+		},
+	}
+
+	in := &SomethingWithJsonUnmarshallerPtrAttr{
+		ID:              "foo",
+		OtherAuthorsPtr: authors,
+	}
+
+	out := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out, in); err != nil {
+		t.Fatal(err)
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	data := jsonData["data"].(map[string]interface{})
+	attributes := data["attributes"].(map[string]interface{})
+	// Verify that the ID was sent
+	val, exists := attributes["otherPtrAuthors"].([]interface{})
+
+	if !exists {
+		t.Fatal("Was expecting the data.attributes.otherPtrAuthors member to exist")
+	}
+
+	if val[0] != authors[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0].Value, val[0])
+	}
+
+	if val[1] != authors[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1].Value, val[1])
 	}
 }
 

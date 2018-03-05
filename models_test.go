@@ -1,9 +1,46 @@
 package jsonapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
+
+type AuthorID struct {
+	Value string
+}
+
+type Author struct {
+	ID   AuthorID `jsonapi:"primary,authors"`
+	Name string   `jsonapi:"attr,name"`
+}
+
+func (id *AuthorID) UnmarshalJSON(arr []byte) error {
+	// Copy byte array to ensure that we keep the value
+	str := make([]byte, len(arr), len(arr))
+	copy(str, arr)
+
+	id.Value = string(str[:])
+
+	return nil
+}
+
+func (id *AuthorID) MarshalJSON() ([]byte, error) {
+	var val = id.Value
+	return json.Marshal(&val)
+}
+
+type SomethingWithJsonUnmarshallerPtrAttr struct {
+	ID              string      `jsonapi:"primary,somethings"`
+	OtherAuthorsPtr []*AuthorID `jsonapi:"attr,otherPtrAuthors"`
+}
+
+type SomethingWithJsonUnmarshallerAttr struct {
+	ID              string      `jsonapi:"primary,somethings"`
+	AuthorID        AuthorID    `jsonapi:"attr,authorId"`
+	OtherAuthors    []AuthorID  `jsonapi:"attr,otherAuthors"`
+	OtherAuthorsPtr []*AuthorID `jsonapi:"attr,otherPtrAuthors"`
+}
 
 type BadModel struct {
 	ID int `jsonapi:"primary"`
@@ -32,17 +69,17 @@ type Timestamp struct {
 }
 
 type Timestamps struct {
-	ID   int        `jsonapi:"primary,timestamp-arrays"`
+	ID   int          `jsonapi:"primary,timestamp-arrays"`
 	Time []time.Time  `jsonapi:"attr,timestamps,iso8601"`
 	Next []*time.Time `jsonapi:"attr,next,iso8601"`
 }
 
 type NumberArrays struct {
-	ID   int        	`jsonapi:"primary,number-arrays"`
-	Ints []int  		`jsonapi:"attr,ints"`
-	UInts []uint 		`jsonapi:"attr,uints"`
-	Floats []float32 	`jsonapi:"attr,floats"`
-	Doubles []float64 	`jsonapi:"attr,doubles"`
+	ID      int       `jsonapi:"primary,number-arrays"`
+	Ints    []int     `jsonapi:"attr,ints"`
+	UInts   []uint    `jsonapi:"attr,uints"`
+	Floats  []float32 `jsonapi:"attr,floats"`
+	Doubles []float64 `jsonapi:"attr,doubles"`
 }
 
 type Car struct {
@@ -50,6 +87,13 @@ type Car struct {
 	Make  *string `jsonapi:"attr,make,omitempty"`
 	Model *string `jsonapi:"attr,model,omitempty"`
 	Year  *uint   `jsonapi:"attr,year,omitempty"`
+}
+
+type CarAuthorID struct {
+	ID    *AuthorID `jsonapi:"primary,cars"`
+	Make  *string   `jsonapi:"attr,make,omitempty"`
+	Model *string   `jsonapi:"attr,model,omitempty"`
+	Year  *uint     `jsonapi:"attr,year,omitempty"`
 }
 
 type Post struct {

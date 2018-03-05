@@ -12,6 +12,56 @@ import (
 	"time"
 )
 
+func TestUnmarshal_idUnmarshalerInterface(t *testing.T) {
+	id := "111111"
+	out := &Author{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type":       "authors",
+			"id":         id,
+			"attributes": map[string]interface{}{"name": "some name"},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.ID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.ID.Value)
+	}
+}
+
+func TestUnmarshal_attrUnmarshalerInterface(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   "ddasd",
+			"attributes": map[string]interface{}{
+				"authorId": id,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.AuthorID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.AuthorID.Value)
+	}
+}
+
 func TestUnmarshall_attrStringSlice(t *testing.T) {
 	out := &Book{}
 	tags := []string{"fiction", "sale"}
@@ -265,7 +315,7 @@ func TestUnmarshalSetsAttrs(t *testing.T) {
 }
 
 func TestUnmarshalParsesIntArray(t *testing.T) {
-	ints := []int {
+	ints := []int{
 		1,
 		2,
 	}
@@ -297,8 +347,78 @@ func TestUnmarshalParsesIntArray(t *testing.T) {
 	}
 }
 
+func TestUnmarshalParsesUnmarshallerArray(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	authors := []string{
+		"4",
+		"5",
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   id,
+			"attributes": map[string]interface{}{
+				"otherAuthors": authors,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if authors[0] != out.OtherAuthors[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0], out.OtherAuthors[0].Value)
+	}
+
+	if authors[1] != out.OtherAuthors[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1], out.OtherAuthors[1].Value)
+	}
+}
+
+func TestUnmarshalParsesUnmarshallerPtrArray(t *testing.T) {
+	id := "111111"
+	out := &SomethingWithJsonUnmarshallerAttr{}
+	authors := []string{
+		"4",
+		"5",
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "somethings",
+			"id":   id,
+			"attributes": map[string]interface{}{
+				"otherPtrAuthors": authors,
+			},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if authors[0] != out.OtherAuthorsPtr[0].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[0], out.OtherAuthors[0].Value)
+	}
+
+	if authors[1] != out.OtherAuthorsPtr[1].Value {
+		t.Fatalf("Was expecting %d, got %d", authors[1], out.OtherAuthors[1].Value)
+	}
+}
+
 func TestUnmarshalParsesUIntArray(t *testing.T) {
-	uints := []uint {
+	uints := []uint{
 		1,
 		2,
 	}
@@ -331,7 +451,7 @@ func TestUnmarshalParsesUIntArray(t *testing.T) {
 }
 
 func TestUnmarshalParsesFloatArray(t *testing.T) {
-	floats := []float32 {
+	floats := []float32{
 		1.5,
 		2.4,
 	}
@@ -363,9 +483,8 @@ func TestUnmarshalParsesFloatArray(t *testing.T) {
 	}
 }
 
-
 func TestUnmarshalParsesISO8601Array(t *testing.T) {
-	timestamps := []string {
+	timestamps := []string{
 		"2016-08-17T08:27:12Z",
 		"2016-08-18T08:27:12Z",
 	}
@@ -401,7 +520,7 @@ func TestUnmarshalParsesISO8601Array(t *testing.T) {
 }
 
 func TestUnmarshalParsesISO8601TimePointerArray(t *testing.T) {
-	timestamps := []string {
+	timestamps := []string{
 		"2016-08-17T08:27:12Z",
 		"2016-08-18T08:27:12Z",
 	}
