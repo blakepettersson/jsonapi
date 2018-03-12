@@ -15,6 +15,11 @@ type Author struct {
 	Name string   `jsonapi:"attr,name"`
 }
 
+type AuthorPtr struct {
+	ID   *AuthorID `jsonapi:"primary,authors-ptr"`
+	Name string   `jsonapi:"attr,name"`
+}
+
 func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 	// Copy byte array to ensure that we keep the value
 	str := make([]byte, len(arr), len(arr))
@@ -25,7 +30,7 @@ func (id *AuthorID) UnmarshalJSON(arr []byte) error {
 	return nil
 }
 
-func (id *AuthorID) MarshalJSON() ([]byte, error) {
+func (id AuthorID) MarshalJSON() ([]byte, error) {
 	var val = id.Value
 	return json.Marshal(&val)
 }

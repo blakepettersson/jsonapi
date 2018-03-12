@@ -36,6 +36,30 @@ func TestUnmarshal_idUnmarshalerInterface(t *testing.T) {
 	}
 }
 
+func TestUnmarshal_idUnmarshalerPtrInterface(t *testing.T) {
+	id := "111111"
+	out := &AuthorPtr{}
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type":       "authors-ptr",
+			"id":         id,
+			"attributes": map[string]interface{}{"name": "some name"},
+		},
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UnmarshalPayload(bytes.NewReader(b), out); err != nil {
+		t.Fatal(err)
+	}
+
+	if id != out.ID.Value {
+		t.Fatalf("Was expecting %d, got %d", id, out.ID.Value)
+	}
+}
+
 func TestUnmarshal_attrUnmarshalerInterface(t *testing.T) {
 	id := "111111"
 	out := &SomethingWithJsonUnmarshallerAttr{}
