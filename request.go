@@ -186,15 +186,27 @@ func unmarshalNode(data *Node, model reflect.Value, included *map[string]*Node) 
 			}
 
 			// Check if the ID Type implements json.Unmarshaler
-			obj := reflect.New(fieldValue.Type())
-			if unmarshaler, ok := obj.Interface().(json.Unmarshaler); ok {
+			var obj reflect.Value
+			if fieldValue.Kind() == reflect.Ptr {
+				obj = reflect.New(fieldValue.Type().Elem())
+			} else {
+				obj = reflect.New(fieldValue.Type())
+			}
+
+			unmarshaler, isUnmarshaler :=  obj.Interface().(json.Unmarshaler)
+
+			if isUnmarshaler {
 				unmarshalError := unmarshaler.UnmarshalJSON([]byte(data.ID))
 				if unmarshalError != nil {
 					er = ErrBadJSONAPIID
 					break
 				}
 
-				assign(fieldValue, obj.Elem())
+				if fieldValue.Kind() == reflect.Ptr {
+					assign(fieldValue, obj.Elem().Addr())
+				} else {
+					assign(fieldValue, obj.Elem())
+				}
 				continue
 			}
 
